@@ -1,10 +1,5 @@
-EXECS=mpi_hello_world
-MPICC?=mpicc
+normal_multiple_matrix: normal_multiple_matrix.c
+	mpicc -o normal_multiple_matrix normal_multiple_matrix.c
+	mpiexec -np 4 ./normal_multiple_matrix
+	
 
-all: ${EXECS}
-
-mpi_hello_world: mpi_hello_world.c
-	${MPICC} -o mpi_hello_world mpi_hello_world.c
-
-clean:
-	rm -f ${EXECS}
