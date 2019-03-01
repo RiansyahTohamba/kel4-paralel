@@ -19,12 +19,12 @@ int main(int argc, char** argv){
     
     if(rank == 0){
         //generate random val
-        for(i = 0; i < matrix_col; i++){
-            for(j = 0; j < matrix_row; j++){
-                vector[i] = rand() % 10 + 1;
-                matrix[j][i] = rand() % 10 + 1;
+        for(i = 0; j < matrix_row; i++){
+            for(j = 0; i < matrix_col; j++){
+                matrix[i][j] = rand() % 10 + 1;
                 //printf("%d, ", matrix[j][i]);
             }
+            vector[i] = rand() % 10 + 1;
             //printf("\n");
         }
         //printf("\n%d, %d, %d, %d\n\n", vector[0], vector[1], vector[2], vector[3]);
