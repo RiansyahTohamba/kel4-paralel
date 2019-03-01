@@ -8,21 +8,19 @@
 
 int main(int argc, char** argv){
     srand(time(NULL));
-    
+
     int numtasks, rank;
-        MPI_Init(NULL, NULL);
+    MPI_Init(NULL, NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
 
-        int matrix[matrix_row][matrix_col], vector[matrix_row], result[matrix_row][matrix_col], vector_result[matrix_col], recvbuf[100], recvbuf_vector;
-        int i, j;
+    int matrix[matrix_row][matrix_col], vector[matrix_row], result[matrix_row][matrix_col], vector_result[matrix_col], recvbuf[100], recvbuf_vector;
+    int i, j;
     
     if(rank == 0){
         //generate random val
-            for(i = 0; i < matrix_col; i++){
+        for(i = 0; i < matrix_col; i++){
             for(j = 0; j < matrix_row; j++){
-
-                vector[i] = rand() % 10 + 1;
                 vector[i] = rand() % 10 + 1;
                 matrix[j][i] = rand() % 10 + 1;
                 //printf("%d, ", matrix[j][i]);
