@@ -20,6 +20,7 @@ int main(int argc, char** argv){
 
     int low_bound = 0;
     int sendsize = 0;
+    double start, finish;
 
     int matrix[matrix_row][matrix_col], vector[matrix_col], result[matrix_row][matrix_col], vector_result[100], recvbuf[100];
     int i, j;
@@ -39,6 +40,8 @@ int main(int argc, char** argv){
             }
             printf("\n");
         }
+        start = MPI_Wtime();
+        
         printf("\n%d, %d, %d, %d, %d\n\n", vector[0], vector[1], vector[2], vector[3], vector[4]);
         sendsize = matrix_row/(numtasks - 1);
         low_bound = 0;
@@ -77,6 +80,8 @@ int main(int argc, char** argv){
             low_bound += sendsize;
         }
 
+        finish = MPI_Wtime();
+        printf("\nTime = %f\n\n", finish - start);
         for(i = 0; i < matrix_row; i++){
             for(j = 0; j < matrix_col; j++){
                 printf("%d, ", result[i][j]);
