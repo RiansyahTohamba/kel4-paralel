@@ -1,6 +1,4 @@
-// The function distance() implements a maximum norm 
 
-// the function output(x new,global x) 
 #include <mpi.h>
 #include <stdio.h>
 
@@ -12,15 +10,20 @@ int main(int argc, char** argv) {
   MPI_Finalize();
 }
 
+// implements a maximum norm 
+int distance(x_old,x_new){
+  max_norm = 10;
+  return max_norm;
+}      
+// returns array global x which contains 
+// the last approximation vector to be the final result.
 void output(x_new,global_x){
-// returns array global x which contains the last
-// approximation vector to be the final result.
- printf("Here is the result matrix:\n");
-    for (i=0; i<N; i++) {
-      for (j=0; j<N; j++)
-        printf("%6.2f   ", c[i][j]);
-      printf ("\n");
-    } 
+  printf("Here is the last approximation vector:\n");
+  for (i=0; i<N; i++) {
+    for (j=0; j<N; j++)
+      printf("%6.2f   ", c[i][j]);
+    printf ("\n");
+  } 
 }
 int Parallel_jacobi(int n, int process,int max_it, float tol)
 {
