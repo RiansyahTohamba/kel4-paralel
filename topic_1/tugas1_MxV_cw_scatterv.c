@@ -18,12 +18,16 @@ int main(int argc, char** argv){
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
 
-    int low_bound;
-    int sendsize;
+    int low_bound[numtasks];
+    int low_boundv[numtasks];
+    int sendsize[numtasks];
+    int sendsizev[numtasks];
+    int fixed_size;
     double start, finish;
 
     int matrix[matrix_row][matrix_col], transpose[matrix_col][matrix_row], vector[matrix_col], result[matrix_row][matrix_col], vector_result[100], recvbuff[100], vecbuff[matrix_col];
     int i, j;
+
     
     if(rank == 0){
         //generate random val
@@ -41,63 +45,61 @@ int main(int argc, char** argv){
             printf("\n");
         }
         
-        printf("\n%d, %d, %d, %d, %d\n\n", vector[0], vector[1], vector[2], vector[3], vector[4]);
-        */        
-        start = MPI_Wtime();        
+        printf("\nVector %d, %d, %d, %d, %d\n\n", vector[0], vector[1], vector[2], vector[3], vector[4]);
+        */
+        start = MPI_Wtime();
+
         //transpose matrix
         for (i = 0; i < matrix_row; i++)
             for(j = 0 ; j < matrix_col; j++)
                 transpose[j][i] = matrix[i][j];
+    }
 
-        sendsize = matrix_col/(numtasks - 1) > 0? matrix_col/(numtasks - 1) : 1;
-        low_bound = 0;
+    fixed_size = matrix_col/numtasks > 0 ? matrix_col/numtasks : 1;
+    low_bound[0] = 0;
+    low_boundv[0] = 0;
         
-        for (i = 1; i < numtasks; i++){ 
-            if(i > matrix_col) break;
-            else{
-                if (((i + 1) == numtasks) && ((matrix_col% (numtasks - 1)) != 0)) sendsize = matrix_col - low_bound;
-                MPI_Isend(&sendsize, 1, MPI_INT, i, 2, MPI_COMM_WORLD, &request);
-                MPI_Isend(&transpose[low_bound][0], sendsize * matrix_row, MPI_INT, i, 3, MPI_COMM_WORLD, &request);
-                MPI_Isend(&vector[low_bound], sendsize, MPI_INT, i, 4, MPI_COMM_WORLD, &request);
-                low_bound += sendsize;
-            }
+    for (i = 0; i < numtasks; i++){ 
+        if(i > matrix_col - 1){
+            low_bound[i] = low_bound[i-1];
+            low_boundv[i] = low_boundv[i-1];
+            sendsize[i] = 0;
+            sendsizev[i] = 0;
+        }else{
+            if (((i + 1) == numtasks) && ((matrix_col % numtasks) != 0)){
+                sendsize[i] = (matrix_row * matrix_col) - low_bound[i-1];
+                sendsizev[i] = matrix_col - low_boundv[i-1];
+            }else{
+                sendsize[i] = fixed_size * matrix_row;  
+                sendsizev[i] = fixed_size;
+            } 
+            if(i < numtasks-1){
+                low_bound[i + 1] = low_bound[i] + sendsize[i];
+                low_boundv[i + 1] = low_boundv[i] + fixed_size;
+            } 
         }
     }
     MPI_Bcast(vector, matrix_col, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(&transpose, sendsize, low_bound, MPI_INT, &recvbuff, 100, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatterv(&vector, sendsizev, low_boundv, MPI_INT, &vecbuff, matrix_col, MPI_INT, 0, MPI_COMM_WORLD);
 
-
-    if(rank > 0 && rank < matrix_row + 1){
-        MPI_Recv(&sendsize, 1, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(&recvbuff, sendsize * matrix_row, MPI_INT, 0, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(&vecbuff, sendsize, MPI_INT, 0, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        
-        //matrix multiplication
-        for(j = 0; j < sendsize; j++)
+    //if(sendsize[rank] > 0) printf("%s - %d  Results: %d %d %d %d %d\n", processor_name, rank,recvbuff[0], recvbuff[1], recvbuff[2], recvbuff[3], recvbuff[4]);
+    //matrix multiplication
+    for(j = 0; j < sendsizev[rank]; j++)
             for(i = 0; i < matrix_row; i++)
                 vector_result[(j * matrix_row) + i] = recvbuff[(j * matrix_row) + i] * vecbuff[j];
 
-        MPI_Isend(&sendsize, 1, MPI_INT, 0, 5, MPI_COMM_WORLD, &request);
-        MPI_Isend(&vector_result, sendsize * matrix_row, MPI_INT, 0, 6, MPI_COMM_WORLD, &request);
-    }
-
+    MPI_Gatherv(&vector_result, sendsize[rank], MPI_INT, &transpose, sendsize, low_bound, MPI_INT, 0, MPI_COMM_WORLD);
+    
     if(rank == 0){
-        low_bound = 0;
-        for (i = 1; i < numtasks; i++)
-        { 
-            if(i > matrix_row) break;
-            MPI_Recv(&sendsize, 1, MPI_INT, i, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Recv(&transpose[low_bound][0], sendsize * matrix_row, MPI_INT, i, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            low_bound += sendsize;
-        }
-
         //transpose matrix
         for (i = 0; i < matrix_row; i++)
             for(j = 0 ; j < matrix_col; j++)
                 result[i][j] = transpose[j][i];
 
         finish = MPI_Wtime();
-        printf("\nRunning Time = %f\n\n", finish - start);
-        /*for(i = 0; i < matrix_row; i++){
+        /*printf("\nTime = %f\n\n", finish - start);
+        for(i = 0; i < matrix_row; i++){
             for(j = 0; j < matrix_col; j++){
                 printf("%d, ", result[i][j]);
             }
@@ -107,3 +109,4 @@ int main(int argc, char** argv){
         
     MPI_Finalize();
 }
+
