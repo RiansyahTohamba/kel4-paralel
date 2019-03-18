@@ -62,7 +62,7 @@ int main(int argc, char** argv){
     MPI_Scatter(&b, fixedsize, MPI_INT, &vecbuff, matrix_size, MPI_INT, 0, MPI_COMM_WORLD);
 
 
-    for(i = 0; i < 15; i++){
+    for(i = 0; i < 1000; i++){
         //Jacobi Method
         for(j = 0; j < fixedsize; j++){
             total_xrow = 0.0;
@@ -89,6 +89,11 @@ int main(int argc, char** argv){
         MPI_Bcast(&belowtol, matrix_size, MPI_INT, 0, MPI_COMM_WORLD);
         if(belowtol == matrix_size) break;
         else belowtol = 0;
-    }   
+    }
+    if(rank == 0){
+        printf("Final Result:");
+        for(i = 0; i < matrix_size; i++) printf(" %f,", x[i]);
+        printf("\n");
+    }
     MPI_Finalize();
 }
