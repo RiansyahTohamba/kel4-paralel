@@ -22,26 +22,34 @@ int main(int argc, char** argv){
     double start, finish;
     struct timespec begin, end;
 
-    double tol = 0.001;
-    double distance, total_xrow, total_time = 0.0, run_time = 0.0;
+    double tol = 0.0001;
+    double total_xrow, total_time = 0.0, run_time = 0.0;
 
-    int matrix[matrix_size][matrix_size], b[matrix_size], recvbuff[(matrix_size * (matrix_size/numtasks))];
-    double x[matrix_size], x_past[matrix_size], x_record[matrix_size][1001], v_result[matrix_size];
-    int i, j, k, vecbuff[(matrix_size/numtasks)];
+    int *matrix = malloc((matrix_size * matrix_size) * sizeof(int*));
+    int *b = malloc(matrix_size * sizeof(int)); 
+    int *recvbuff = malloc((matrix_size * (matrix_size/numtasks)) * sizeof(int));
+    double *x = malloc(matrix_size * sizeof(double));
+    double *x_past = malloc(matrix_size * sizeof(double));
+    double **x_record;
+    double *v_result = malloc(matrix_size * sizeof(double));
+    int i, j, k;
+    int *vecbuff = malloc((matrix_size/numtasks) * sizeof(double));
     int belowtol = 0;
     
     for(i = 0; i < matrix_size; i++) x_past[i] = 0.0;
-
     if(rank == 0){
+        x_record = malloc(matrix_size * sizeof(double*));
+        printf("Matrix size: %d x %d\n", matrix_size, matrix_size);
         clock_gettime(CLOCK_REALTIME, &begin);
         //generate random val
         for(i = 0; i < matrix_size; i++){
             sum_one_row = 0;
             for(j = 0; j < matrix_size; j++){
-                matrix[i][j] = (rand() % 10) + 1;
-                sum_one_row += matrix[i][j];
+                matrix[(i * matrix_size) + j] = (rand() % 10) + 1;
+                sum_one_row += matrix[(i * matrix_size) + j];
             }
-            matrix[i][i] = (rand() % 10) + sum_one_row;
+            x_record[i] = malloc(1001 * sizeof(double));
+            matrix[(i * matrix_size) + i] = (rand() % 10) + sum_one_row;
             b[i] = (rand() % 10) + 1;
             x[i] = 0.0;
             x_record[i][0] = 0.0;
@@ -56,17 +64,16 @@ int main(int argc, char** argv){
             printf("\n");
         }
         printf("\nB:");
-        for(i = 0; i < matrix_size; i++) printf(" %d,\n\n", b[i]);
+        for(i = 0; i < matrix_size; i++) printf(" %d, ", b[i]);
         printf("\n");*/
     }
 
     fixedsize = matrix_size/numtasks;
     if(rank == 0) start = MPI_Wtime();
-    MPI_Bcast(&x, matrix_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Scatter(&matrix, fixedsize * matrix_size, MPI_INT, &recvbuff, (matrix_size * (matrix_size/numtasks)), MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Scatter(&b, fixedsize, MPI_INT, &vecbuff, fixedsize, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(x, matrix_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Scatter(matrix, fixedsize * matrix_size, MPI_INT, recvbuff, (matrix_size * (matrix_size/numtasks)), MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(b, fixedsize, MPI_INT, vecbuff, fixedsize, MPI_INT, 0, MPI_COMM_WORLD);
     if(rank == 0){ finish = MPI_Wtime(); total_time = finish - start;}
-    MPI_Barrier(MPI_COMM_WORLD);
 
     for(i = 0; i < 1000; i++){
         //Jacobi Method
@@ -77,9 +84,10 @@ int main(int argc, char** argv){
                 total_xrow += (double) recvbuff[(j * matrix_size) + k] * x[k];
             }
             v_result[j] = (double) (vecbuff[j] - total_xrow) / recvbuff[(j * matrix_size) + (rank * fixedsize) + j];
+            //if(rank == 0) printf("time: %d - %f/ %d\n", vecbuff[j], total_xrow, recvbuff[(j * matrix_size) + (rank * fixedsize) + j]);
         }
         if(rank == 0) start = MPI_Wtime();
-        MPI_Allgather(&v_result, fixedsize, MPI_DOUBLE, &x, fixedsize, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Allgather(v_result, fixedsize, MPI_DOUBLE, x, fixedsize, MPI_DOUBLE, MPI_COMM_WORLD);
         if(rank == 0){
             finish = MPI_Wtime(); 
             total_time = finish - start;
@@ -101,11 +109,20 @@ int main(int argc, char** argv){
     if(rank == 0){
         clock_gettime(CLOCK_REALTIME, &end);
         run_time = (end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
-        printf("Final Result:");
-        for(i = 0; i < matrix_size; i++) printf(" %f,", x[i]);
+        //printf("Final Result:");
+        //for(i = 0; i < matrix_size; i++) printf(" %f,", x[i]);
         printf("\nCommunication Time: %f\n", total_time);
         printf("Running Time: %f\n", run_time);
+        for(i = 0; i < matrix_size; i++)
+            free(x_record[i]);
     }
     MPI_Finalize();
+    free(matrix);
+    free(b); 
+    free(recvbuff);
+    free(x);
+    free(x_past);
+    free(v_result);
+    free(vecbuff);
 }
 
