@@ -72,12 +72,13 @@ int main(int argc, char** argv){
     for(i = 0; i  < matrix_size * length; i++)
         temp_result[i] = 0;
     int shift;
+    int post = rank * length;
     for(shift = 0; shift < world_size; shift++) {
     	// Matrix multiplication
     	for(i = 0;i < length; i++){
     	   for(j = 0; j < length; j++){
     	       for(k = 0; k < matrix_size; k++)
-    	           temp_result[i * matrix_size + k] += temp_matrixA[i * matrix_size + k] * temp_trans_matrixB[j * matrix_size + k];
+    	           temp_result[i * matrix_size + j + post] += temp_matrixA[i * matrix_size + k] * temp_trans_matrixB[j * matrix_size + k];
             }
         }
         
@@ -86,6 +87,8 @@ int main(int argc, char** argv){
         if(rank == 0){ finish = MPI_Wtime(); total_time += finish - start;}
         buf_temp = recvbuf; recvbuf = temp_trans_matrixB; temp_trans_matrixB = buf_temp;
         //temp_trans_matrixB = recvbuf;
+	post  += length;
+        if(post >= matrix_size) post = 0;
     }
 
     if(rank == 0) start = MPI_Wtime();
@@ -99,7 +102,7 @@ int main(int argc, char** argv){
            for(j = 0; j < matrix_size; j++){
                for(k = 0; k < matrix_size; k++)
                     //seq_result[i * matrix_size + k] += matrixA[i * matrix_size + k] * matrixB[k * matrix_size + j];
-                    seq_result[i * matrix_size + k] += matrixA[i * matrix_size + k] * transposed_matrixB[j * matrix_size + k];
+                    seq_result[i * matrix_size + j] += matrixA[i * matrix_size + k] * transposed_matrixB[j * matrix_size + k];
             }
 
         for(i = 0; i < matrix_size * matrix_size; i++){
