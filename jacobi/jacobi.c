@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 int main(int argc, char** argv) {
-  MPI_Init(NULL, NULL);
+  MPI_Initss(NULL, NULL);
 
   Parallel_jacobi(5, 4,100,10.5);
 
