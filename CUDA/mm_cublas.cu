@@ -10,25 +10,30 @@
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
-#include <cublas_v2.h>
+#include <cublasXt.h>
 
 //Operasi perkalian matrix pada gpu
 void matrixmul_cublas(float *gpu_matrixA, float *gpu_matrixB, float *gpu_result, int matrix_size){
-    int lda=matrix_size,ldb=matrix_size,ldc=matrix_size;
+    int lda = matrix_size,ldb = matrix_size, ldc = matrix_size, m;
     const float alf = 1;
     const float bet = 0;
     const float *alpha = &alf;
     const float *beta = &bet;
 
-    // Create a handle for CUBLAS
-    cublasHandle_t handle;
-    cublasCreate(&handle);
-
-    // Do the actual multiplication
-    cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size, matrix_size, matrix_size, alpha, gpu_matrixA, lda, gpu_matrixB, ldb, beta, gpu_result, ldc);
-
-    // Destroy the handle
-    cublasDestroy(handle);
+    cublasXtHandle_t handle;
+    cublasXtCreate(&handle);
+    
+    //Setting device 
+    int device_count;
+    cudaGetDeviceCount(&device_count);
+    int device_id[device_count];
+    for(m = 0; m < device_count; m++) device_id[m] = m;
+    cublasXtDeviceSelect(handle, device_count, device_id);
+    
+    // matrix multiplication pada multi gpu
+    cublasXtSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size, matrix_size, matrix_size, alpha, gpu_matrixA, lda, gpu_matrixB, ldb, beta, gpu_result, ldc);
+    cudaDeviceSynchronize();
+    cublasXtDestroy(handle);
 }
 
 int main(int argc, char** argv){
