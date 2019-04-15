@@ -1,0 +1,107 @@
+//Note:
+// Cara compile nvcc nama_file.cu -o nama_file_output -lcublas -gencode arch=sre_compute,code=seri_sm
+// Cara running program ./nama_file mode besar_matrix
+//Ukuran matrix: besar_matrix x besar matrix
+// Mode:
+// 0: Matrix multiplication pada tanpa melihat hasil sekuensial
+// 1: Matrix multiplication pada dengan hasil sekuensial
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <assert.h>
+#include <cublas_v2.h>
+
+//Operasi perkalian matrix pada gpu
+void matrixmul_cublas(float *gpu_matrixA, float *gpu_matrixB, float *gpu_result, int matrix_size){
+    int lda=matrix_size,ldb=matrix_size,ldc=matrix_size;
+    const float alf = 1;
+    const float bet = 0;
+    const float *alpha = &alf;
+    const float *beta = &bet;
+
+    // Create a handle for CUBLAS
+    cublasHandle_t handle;
+    cublasCreate(&handle);
+
+    // Do the actual multiplication
+    cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, matrix_size, matrix_size, matrix_size, alpha, gpu_matrixA, lda, gpu_matrixB, ldb, beta, gpu_result, ldc);
+
+    // Destroy the handle
+    cublasDestroy(handle);
+}
+
+int main(int argc, char** argv){
+    srand(time(NULL));
+    double runtime;
+    struct timespec begin, end;
+
+    // Inisialisasi parameter dari user input
+    int mode = atoi(argv[1]);
+    int matrix_size = atoi(argv[2]);
+
+    //Debug print variabel user input
+    //printf("Mode: %d\n", mode);
+    //printf("Size %d x %d\n", matrix_size, matrix_size);
+
+    // Inisailiasai pada Host
+    //int matrixallsize = matrix_size * matrix_size;
+    int matrixBytes = (matrix_size * matrix_size) * sizeof(float);
+    float *matrixA = (float *)malloc(matrixBytes) ;
+    float *matrixB = (float *)malloc(matrixBytes);
+    float *result = (float *)malloc(matrixBytes);
+    int i, j, k;
+
+    //Inisialisasi martrix
+    for(i = 0; i < matrix_size * matrix_size; i++){
+        matrixA[i] = rand() % 99 + 1;
+        matrixB[i] = rand() % 99 + 1;
+    }
+
+    clock_gettime(CLOCK_REALTIME, &begin);
+
+    //Inisialisasi pada GPU
+    float *gpu_matrixA, *gpu_matrixB, *gpu_result;
+    cudaMalloc((void **) &gpu_matrixA, matrixBytes);
+    cudaMalloc((void **) &gpu_matrixB, matrixBytes);
+    cudaMalloc((void **) &gpu_result, matrixBytes);
+    cudaMemcpy(gpu_matrixA, matrixA, matrixBytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(gpu_matrixB, matrixB, matrixBytes, cudaMemcpyHostToDevice);
+
+    //Operasi cublas pada gpu
+    matrixmul_cublas(gpu_matrixA, gpu_matrixB, gpu_result, matrix_size);
+
+    //Return hasil perkalian
+    cudaMemcpy(result, gpu_result, matrixBytes, cudaMemcpyDeviceToHost);
+    //cudaThreadSynchronize();
+    clock_gettime(CLOCK_REALTIME, &end);
+    runtime = (end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+    printf("Running Time: %f\n\n", runtime);
+
+    if(mode == 1){
+        int right_answer = 0;
+        float *seqresult = (float *)malloc(matrixBytes);
+        for (i = 0; i < matrix_size; i++){
+            for (j = 0; j < matrix_size; j++){
+                seqresult[i * matrix_size + j] = 0;
+                for (k = 0; k < matrix_size; k++)
+                    seqresult[i + matrix_size * j] += matrixA[i + matrix_size * k] * matrixB[k + matrix_size * j];
+                if(seqresult[i + matrix_size * j] == result[i + matrix_size * j]) right_answer += 1;
+                //printf("%d - %d S: %f, CUDA: %f\n", i * matrix_size, j, seqresult[i + matrix_size * j], result[i + matrix_size * j]);
+            }
+        }
+        if(right_answer == (matrix_size * matrix_size)) printf("The answer is matched.\n");
+        free(seqresult);
+    }
+
+    //Membebaskan Device
+    cudaFree(gpu_matrixB);
+    cudaFree(gpu_matrixB);
+    cudaFree(gpu_result);
+
+    //Membebaskan Host
+    free(matrixA);
+    free(matrixB);
+    free(result);
+}
+
