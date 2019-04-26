@@ -220,14 +220,25 @@ int main(int argc, char *argv[])
 	char *line;
 	size_t len = 0;
 	i=0;
-	while ((getline(&line, &len, file)) != -1) 
+	// while ((getline(&line, &len, file)) != -1) 
+	// {
+	// 	if (i<N){
+	// 		A[i] = atof(line);
+	// 		printf("%.2f\n", A[i]);
+	// 	}else{
+	// 		b[i-N] = atof(line);
+	// 		printf("%.2f\n", b[i-N]);
+	// 	}
+			
+	// 	i++;
+	// }
+
+	while (i <= N) 
 	{
 		if (i<N){
-			A[i] = atof(line);
-			printf("%.2f\n", A[i]);
+			A[i] = 2.0;
 		}else{
-			b[i-N] = atof(line);
-			printf("%.2f\n", b[i-N]);
+			b[i-N] = 2.0;
 		}
 			
 		i++;
