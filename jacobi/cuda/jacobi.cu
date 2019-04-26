@@ -279,10 +279,15 @@ int main(int argc, char *argv[])
 	testDevice(devID);
 
 	// Allocate memory on the device
-	assert(cudaSuccess == cudaMalloc((void **) &x_next_d, Ni*sizeof(float)));
-	assert(cudaSuccess == cudaMalloc((void **) &A_d, N*sizeof(float)));
-	assert(cudaSuccess == cudaMalloc((void **) &x_now_d, Ni*sizeof(float)));
-	assert(cudaSuccess == cudaMalloc((void **) &b_d, Ni*sizeof(float)));
+	// assert(cudaSuccess == cudaMalloc((void **) &x_next_d, Ni*sizeof(float)));
+	// assert(cudaSuccess == cudaMalloc((void **) &A_d, N*sizeof(float)));
+	// assert(cudaSuccess == cudaMalloc((void **) &x_now_d, Ni*sizeof(float)));
+	// assert(cudaSuccess == cudaMalloc((void **) &b_d, Ni*sizeof(float)));
+
+	cudaMalloc((void **) &x_next_d, Ni*sizeof(float));
+	cudaMalloc((void **) &A_d, N*sizeof(float));
+	cudaMalloc((void **) &x_now_d, Ni*sizeof(float));
+	cudaMalloc((void **) &b_d, Ni*sizeof(float));
 
 	// Copy data -> device
 	cudaMemcpy(x_next_d, x_next, sizeof(float)*Ni, cudaMemcpyHostToDevice);
