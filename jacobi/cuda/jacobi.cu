@@ -222,12 +222,14 @@ int main(int argc, char *argv[])
 	i=0;
 	while ((getline(&line, &len, file)) != -1) 
 	{
-		if (i<N)
+		if (i<N){
 			A[i] = atof(line);
 			printf("%.2f\n", A[i]);
-		else
+		}else{
 			b[i-N] = atof(line);
 			printf("%.2f\n", b[i-N]);
+		}
+			
 		i++;
 	}
 
