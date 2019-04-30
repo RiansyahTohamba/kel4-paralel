@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
-#define sharedsize 64
+#define sharedsize 32
 
 //Operasi perkalian matrix pada gpu
 __global__ void matrixmul_kernel(float *gpu_matrixA, float *gpu_matrixB, float *gpu_result, int matrix_size, int grid, int block){
@@ -36,7 +36,7 @@ __global__ void matrixmul_kernel(float *gpu_matrixA, float *gpu_matrixB, float *
 //	if(row_index < matrix_size && col_index < matrix_size){
 		//for(n = 0; n < displacement; n++){
 			//for(o = 0; o < displacement; o++){
-			for(m = 0; m < gridDim.x; m++){
+			for(m = 0; m < (sharedsize + matrix_size  - 1)/sharedsize; m++){
 				mrow_index = row_index * matrix_size + m * sharedsize + threadIdx.x; 
 			//	if(threadIdx.y + n < sharedsize && threadIdx.y + o < sharedsize){
 				if(mrow_index < matrix_size * matrix_size)
@@ -102,14 +102,14 @@ int main(int argc, char** argv){
 		cudaMemcpy(gpu_matrixA, matrixA, matrixBytes, cudaMemcpyHostToDevice);
 		cudaMemcpy(gpu_matrixB, matrixB, matrixBytes, cudaMemcpyHostToDevice);
 		
-		int omg;
-		if(sharedsize > matrix_size){
-			omg = matrix_size;
-		else omg = sharedsize;
+		//int omg;
+		//if(sharedsize > matrix_size){
+		//	omg = matrix_size;
+		//else omg = sharedsize;
 				
 		//Mulai operasi pada device
-		igrid = (matrix_size - 1)/omg + 1;
-		iblock = omg;
+		igrid = (matrix_size - 1)/sharedsize + 1;
+		iblock = sharedsize;
 		
 		//iblock = matrix_size/ igrid;
 		//if(iblock < 1) iblock = 1;
@@ -149,7 +149,7 @@ int main(int argc, char** argv){
 				for (k = 0; k < matrix_size; k++)
 					seqresult[i * matrix_size + j] += matrixA[i * matrix_size + k] * matrixB[k * matrix_size + j];
 				if(seqresult[i * matrix_size + j] == result[i * matrix_size + j]) right_answer += 1;
-				printf("%d - %d S: %f, CUDA: %f\n", i * matrix_size, j, seqresult[i * matrix_size + j], result[i * matrix_size + j]);
+				//printf("%d - %d S: %f, CUDA: %f\n", i * matrix_size, j, seqresult[i * matrix_size + j], result[i * matrix_size + j]);
 			}
 		}
 		if(right_answer == (matrix_size * matrix_size)) printf("The answer is matched.\n");
