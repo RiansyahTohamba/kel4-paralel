@@ -252,7 +252,7 @@ int main(int argc, char** argv){
 				for (k = 0; k < matrix_size; k++)
 					seqresult[i * matrix_size + j] += matrixA[i * matrix_size + k] * matrixB[k * matrix_size + j];
 				if(seqresult[i * matrix_size + j] == result[i * matrix_size + j]) right_answer += 1;
-				printf("%d - %d S: %f, CUDA: %f\n", i * matrix_size, j, seqresult[i * matrix_size + j], result[i * matrix_size + j]);
+				//printf("%d - %d S: %f, CUDA: %f\n", i * matrix_size, j, seqresult[i * matrix_size + j], result[i * matrix_size + j]);
 			}
 		}
 		if(right_answer == (matrix_size * matrix_size)) printf("The answer is matched.\n");
