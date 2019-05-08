@@ -97,7 +97,8 @@ int main(int argc, char** argv){
 	srand(time(NULL));
 	double runtime;
 	struct timespec begin, end;
-	
+	printf("Lol");
+
 	// Inisialisasi parameter dari user input
 	int mode = atoi(argv[1]);
 	int matrix_size = atoi(argv[2]);
