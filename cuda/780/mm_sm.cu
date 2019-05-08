@@ -36,7 +36,11 @@ __global__ void matrixmul_kernel(float *gpu_matrixA, float *gpu_matrixB, float *
 //	if(row_index < matrix_size && col_index < matrix_size){
 		//for(n = 0; n < displacement; n++){
 			//for(o = 0; o < displacement; o++){
+<<<<<<< HEAD:CUDA/870/mm_sm.cu
 			for(m = 0; m < (matrix_size + sharedsize - 1)/sharedsize; m++){
+=======
+			for(m = 0; m < (sharedsize + matrix_size  - 1)/sharedsize; m++){
+>>>>>>> 5bc549dc584051c56f186af6f5235b07bc79bdef:cuda/780/mm_sm.cu
 				mrow_index = row_index * matrix_size + m * sharedsize + threadIdx.x; 
 			//	if(threadIdx.y + n < sharedsize && threadIdx.y + o < sharedsize){
 				if(mrow_index < matrix_size * matrix_size)
